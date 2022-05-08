@@ -21,18 +21,17 @@ typedef struct Table{
     size_t msize;
     size_t csize;
 } Table;
-void* Insert(Table*, Item*);
+bool Insert(Table*, Item*);
 Table* FindByKey(const Table*, const char*);
-bool DeleteByKey(const Table*, const char*);
+bool DeleteByKey(Table*, const char*);
 KeySpace* FindByReleaseKey(const Table*, const char*, size_t);
-bool DeleteByReleaseKey(const Table*, const char*, size_t);
-Item* FindByComposeKey(const Table*, const char*);
+bool DeleteByReleaseKey(Table*, const char*, size_t);
+
 
 
  Item* InitItem(const char*, const char*);
  size_t hashFunc(const char*, size_t);
  char* get_str(const Item *item);
- void FreeItem(Item*);
  char* TransformTableString(const Table*);
  void FreeTable(Table*);
  Table* TableCreate(size_t);

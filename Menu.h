@@ -7,4 +7,4 @@ void Menu();
 Table* Create();
 void Delete(Table*, int);
 void InsertInTable(Table *table);
-#endif // MENU_H
+#endif

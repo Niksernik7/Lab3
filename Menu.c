@@ -4,7 +4,7 @@ char* enterString()
     char buf[81] = { 0 };
     char* res = NULL;
     size_t len = 0;
-    int n = 0, rc = 0;
+    int n;
     do {
         n = scanf("%80[^\n]", buf);
         if (n < 0)
@@ -22,7 +22,7 @@ char* enterString()
             len = str_len;
         }
         else {
-            rc = scanf("%*c");
+            scanf("%*c");
         }
     } while (n > 0);
     if (len > 0)
@@ -93,16 +93,13 @@ void printTable(const Table* t) {
     if (str != NULL) {
         printf("%s\n", str);
         free(str);
-    }
+    } else printf("Table is empty\n");
 }
-
-// End pritfs
 
 int GetInt() {
     char* str = "Doesn't number!\n : ";
     char* ptr;
     do {
-        int a = 1;
         char* input = (char*) enterString();
         int n = (int)strtol(input, &ptr, 10);
         if (input == ptr - strlen(input) && strlen(input) != 0) {
@@ -179,22 +176,24 @@ void Delete(Table *table, int mod) {
             printf(" Key : ");
             do {
                 printf("%s", msg);
-                key = (char*) enterString();
+                key = enterString();
                 msg = "Key cannot be empty\n Key : ";
                 if(strlen(key) != 0) break;
                 free(key);
             } while (1);
-            DeleteByKey(table, key);
+            if(!DeleteByKey(table, key))
+                printf("Doesn't exist\n");
             free(key);
             break;
         }
         case 2: {
             printf("Enter:\n");
             printf(" Key : ");
-            char *key = (char*) enterString();
+            key = enterString();
             printf(" Release : ");
             int release = GetInt();
-            DeleteByReleaseKey(table, key, release);
+            if(!DeleteByReleaseKey(table, key, release))
+                printf("Doesn't exist\n");
             free(key);
             break;
         }
@@ -226,7 +225,10 @@ void InsertInTable(Table* table) {
         printf("%s", str);
     } while (1);
     Item* item = InitItem(data, key);
-    Insert(table, item);
+    if (!Insert(table, item)) {
+        printf("Check count of elements in table, because it is full.\n ");
+        printf("If you are sure that it isn't full, then you dont have enough memory.\n");
+    }
     free(data);
     free(key);
 }
@@ -243,11 +245,10 @@ void FindInTable(Table *table, size_t mod) {
             size_t release = GetInt();
             KeySpace* ks = FindByReleaseKey(table, key, release);
             if (ks != NULL) {
+                printItem(ks->data);
                 free(ks->key);
-                FreeItem(ks->data);
-                free(ks->data);
                 free(ks);
-            }
+            } else printf("Doesn't exist\n");
             free(key);
             break;
         }
@@ -255,9 +256,9 @@ void FindInTable(Table *table, size_t mod) {
             printf("Enter:\n");
             printf(" Key : ");
             char *key = (char*) enterString();
-            Item *item = FindByKey(table, key);
+            Table *item = FindByKey(table, key);
             free(key);
-            printItem(item);
+            printTable(item);
             break;
         }
         default:
