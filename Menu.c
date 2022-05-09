@@ -259,6 +259,11 @@ void FindInTable(Table *table, size_t mod) {
             Table *item = FindByKey(table, key);
             free(key);
             printTable(item);
+            for (size_t i = 0; i < item->msize; i++){
+                free(item->keySpace[i].key);
+            }
+            free(item->keySpace);
+            free(item);
             break;
         }
         default:

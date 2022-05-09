@@ -16,6 +16,14 @@ bool Insert(Table* table, Item* item) {
             if (table->csize == table->msize)
                 return false;
             if (table->keySpace[i].busy == 0) {
+                if (table->keySpace[i].key != NULL)
+                    free(table->keySpace[i].key);
+                if (table->keySpace[i].data != NULL){
+                    free(table->keySpace[i].data->key);
+                    free(table->keySpace[i].data->data);
+                    free(table->keySpace[i].data);
+
+                }
                 if ((table->keySpace[i].key = strdup(item->key)) == NULL) //ENOMEM
                     return false;
                 table->keySpace[i].busy = 1;
@@ -27,29 +35,28 @@ bool Insert(Table* table, Item* item) {
             i = (i + 1) % table->msize;
     } while (i != hashKey);
 
-    errno = ENOBUFS;
     return 0;
 }
 Table* FindByKey(const Table* table, const char* key) {
     KeySpace* res = NULL;
     size_t nres = 0; // количество найденных элементов
     for (size_t i = 0; i < table->msize; i++){
-        if (table->keySpace[i].key != NULL) {
-            if (strcmp(key, table->keySpace[i].key) == 0) {
-                KeySpace *tmp = realloc(res, (nres + 1) * sizeof(KeySpace));
-                if (tmp == NULL)
-                    return NULL;
-                res = tmp;
-                res[nres].key = strdup(key);
-                if (res[nres].key == NULL) {
-                    free(res);
-                    return NULL;
+        if (table->keySpace[i].key != NULL && table->keySpace[i].busy != 0) {
+                if (strcmp(key, table->keySpace[i].key) == 0) {
+                    KeySpace *tmp = realloc(res, (nres + 1) * sizeof(KeySpace));
+                    if (tmp == NULL)
+                        return NULL;
+                    res = tmp;
+                    res[nres].key = strdup(key);
+                    if (res[nres].key == NULL) {
+                        free(res);
+                        return NULL;
+                    }
+                    res[nres].busy = table->keySpace[i].busy;
+                    res[nres].release = table->keySpace[i].release;
+                    res[nres].data = table->keySpace[i].data;
+                    nres++;
                 }
-                res[nres].busy = table->keySpace[i].busy;
-                res[nres].release = table->keySpace[i].release;
-                res[nres].data = table->keySpace[i].data;
-                nres++;
-            }
         }
     }
     if (res == NULL)
@@ -72,30 +79,39 @@ bool DeleteByKey( Table* table,  const char* key){
         return false;  // НЕТ ТАКИХ ЭЛЕМЕНТОВ
     for (size_t i = 0; i < table->msize; i++){
         for (size_t j = 0; j < ft->msize; j++){
-            if (strcmp(table->keySpace[i].key, ft->keySpace[j].key) == 0) {
-                table->keySpace[i].busy = 0;
-                table->csize--;
+            if (table->keySpace[i].key != NULL && table->keySpace[i].busy != 0) {
+                if (strcmp(table->keySpace[i].key, ft->keySpace[j].key) == 0) {
+                    table->keySpace[i].busy = 0;
+                    table->csize--;
+                }
             }
         }
     }
+    for (size_t i = 0; i < ft->msize; i++){
+        free(ft->keySpace[i].key);
+    }
+    free(ft->keySpace);
+    free(ft);
     return true;
 }
 
 KeySpace* FindByReleaseKey(const Table* table, const char* key, size_t release){
     KeySpace* res = NULL;
-    for(size_t i = 0; i < table->msize; i++){
-        if (strcmp(table->keySpace[i].key, key) == 0 &&
-            (table->keySpace[i].release == release)) {
-            res = calloc(1, sizeof(KeySpace));
-            res->key = strdup(key);
-            if ( res->key == NULL) {
-                free(res);
-                return NULL;
+    for(size_t i = 0; i < table->msize; i++) {
+        if (table->keySpace[i].key != NULL && table->keySpace[i].busy != 0) {
+            if (strcmp(table->keySpace[i].key, key) == 0 &&
+                (table->keySpace[i].release == release)) {
+                res = calloc(1, sizeof(KeySpace));
+                res->key = strdup(key);
+                if (res->key == NULL) {
+                    free(res);
+                    return NULL;
+                }
+                res->busy = table->keySpace[i].busy;
+                res->release = table->keySpace[i].release;
+                res->data = table->keySpace[i].data;
+                return res;
             }
-            res->busy = table->keySpace[i].busy;
-            res->release = table->keySpace[i].release;
-            res->data = table->keySpace[i].data;
-            return res;
         }
     }
     return NULL;
@@ -103,10 +119,12 @@ KeySpace* FindByReleaseKey(const Table* table, const char* key, size_t release){
 
 bool DeleteByReleaseKey(Table* table, const char* key, size_t release){
     for (int i = 0; i < table->msize; i++) {
-        if (strcmp(table->keySpace[i].key, key) == 0 && (table->keySpace[i].release == release)) {
-            table->keySpace[i].busy = 0;
-            table->csize--;
-            return true ;
+        if (table->keySpace[i].key != NULL && table->keySpace[i].busy != 0) {
+            if (strcmp(table->keySpace[i].key, key) == 0 && (table->keySpace[i].release == release)) {
+                table->keySpace[i].busy = 0;
+                table->csize--;
+                return true;
+            }
         }
     }
     return false;
@@ -155,6 +173,9 @@ bool DeleteByReleaseKey(Table* table, const char* key, size_t release){
         KeySpace* ks = table->keySpace + i;
         KeySpace* t = ks;
         free(t->key);
+        free(t->data->key);
+        free(t->data->data);
+        free(t->data);
     }
     free(table->keySpace);
 }
@@ -175,12 +196,12 @@ bool DeleteByReleaseKey(Table* table, const char* key, size_t release){
         if (s == NULL) {
             len = strlen(i);
             s = (char*)calloc(len + 3 + 4 + 1 , sizeof(char));
-            itoa(ks->busy, busy, 10);
+            snprintf(busy, 255,  "%d", ks->busy);
             strcpy(s, busy);
             strcat(s, " | ");
             strcat(s, i);
             strcat(s, " | ");
-            itoa(ks->release, release, 10);
+            snprintf(release, 255,  "%d", ks->release);
             s = realloc(s, (len + 3 + strlen(release) + 1 + 1 + 4) * sizeof(char));
             strcat(s, release);
             strcat(s, "\n");
@@ -189,12 +210,12 @@ bool DeleteByReleaseKey(Table* table, const char* key, size_t release){
         else {
             size_t new_chunk = strlen(i);
             s = realloc(s, (len + new_chunk + 1 + 1 + 3 + 4) * sizeof(char));
-            itoa(ks->busy, busy, 10);
+            snprintf(busy, 255,  "%d", ks->busy);
             strcat(s, busy);
             strcat(s, " | ");
             strcat(s, i);
             strcat(s, " | ");
-            itoa(ks->release, release, 10);
+            snprintf(release, 255,  "%d", ks->release);
             s = realloc(s, (len + new_chunk + strlen(release) + 1 + 1 + 4 + 3) * sizeof(char));
             strcat(s, release);
             strcat(s, "\n");
