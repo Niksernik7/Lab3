@@ -111,6 +111,7 @@ int GetInt() {
     } while (1);
 }
 
+
 void Menu() {
     Table *table = Create();
     do {
