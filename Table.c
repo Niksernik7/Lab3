@@ -15,7 +15,7 @@ bool Insert(Table* table, Item* item) {
     do {
         if (table->csize == table->msize)
             return false;
-        if (table->keySpace[i].busy == 0) {
+        if (table->keySpace[i].busy == 0 || table->keySpace[i].busy == 2) {
             if ((table->keySpace[i].key = strdup(item->key)) == NULL) //ENOMEM
                 return false;
             table->keySpace[i].busy = 1;
@@ -111,7 +111,7 @@ bool DeleteByKey( Table* table,  const char* key){
                     }
                     table->keySpace[i].data = NULL;
                     table->keySpace[i].release = 0;
-                    table->keySpace[i].busy = 0;
+                    table->keySpace[i].busy =2;
                     table->csize--;
                 }
             }
@@ -140,7 +140,7 @@ bool DeleteByReleaseKey(Table* table, const char* key, size_t release){
                 }
                 table->keySpace[i].data = NULL;
                 table->keySpace[i].release = 0;
-                table->keySpace[i].busy = 0;
+                table->keySpace[i].busy = 2;
                 table->csize--;
                 return true;
             }
@@ -211,6 +211,17 @@ char* TransformTableString(const Table* table) {
         Item* item = ks->data;
         char* i = get_str(item);
         if (i == NULL) {
+            if (ks[j].busy != 0) {
+                s = (char*)calloc(len + 3 + 4 + 1 , sizeof(char));
+                snprintf(busy, 255,  "%d", ks->busy);
+                strcpy(s, busy);
+                strcat(s, "|  |  |");
+                snprintf(release, 255,  "%d", ks->release);
+                strcat(s, release);
+                strcat(s, "\n");
+                ks++;
+                continue;
+            }
             ks++;
             continue;
         }
