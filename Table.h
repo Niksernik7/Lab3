@@ -32,7 +32,7 @@ bool DeleteByReleaseKey(Table*, const char*, size_t);
  Item* InitItem(const char*, const char*);
  size_t hashFunc(const char*, size_t);
  char* get_str(const Item *item);
- char* TransformTableString(const Table*);
+ char* TableIntoString(const Table*);
  void FreeTable(Table*);
  Table* TableCreate(size_t);
 #endif

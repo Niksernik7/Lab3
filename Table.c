@@ -35,6 +35,8 @@ Table* FindByKey(const Table* table, const char* key) {
     size_t hashKey = hashFunc(key, table->msize);
     size_t i = hashKey;
     do {
+        if (table->keySpace[i].busy == 0)
+            break;
         if (table->keySpace[i].key != NULL && table->keySpace[i].busy != 0) {
             if (strcmp(key, table->keySpace[i].key) == 0) {
                 KeySpace *tmp = realloc(res, (nres + 1) * sizeof(KeySpace));
@@ -73,6 +75,8 @@ KeySpace* FindByReleaseKey(const Table* table, const char* key, size_t release){
     size_t hashKey = hashFunc(key, table->msize);
     size_t i = hashKey;
     do {
+        if (table->keySpace[i].busy == 0)
+            break;
         if (table->keySpace[i].key != NULL && table->keySpace[i].busy != 0) {
             if (strcmp(table->keySpace[i].key, key) == 0 &&
                 (table->keySpace[i].release == release)) {
@@ -201,7 +205,7 @@ void FreeTable(Table* table) {
     free(table->keySpace);
 }
 
-char* TransformTableString(const Table* table) {
+char* TableIntoString(const Table* table) {
     char* s = NULL, release[255] = {0}, busy[255] = {0};
     size_t len = 0;
     KeySpace* ks = table->keySpace;

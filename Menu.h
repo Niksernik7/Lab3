@@ -4,7 +4,7 @@
 int GetInt();
 void FindInTable(Table*, size_t);
 void Menu();
-Table* Create();
+Table* MakeTable();
 void Delete(Table*, int);
 void InsertInTable(Table *table);
 #endif
